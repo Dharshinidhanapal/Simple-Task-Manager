@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simple Task Manager</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f1f1f1;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      margin-top: 50px;
+    }
+
+    input[type="text"] {
+      padding: 10px;
+      width: 250px;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 10px 15px;
+      font-size: 16px;
+      margin-left: 5px;
+      cursor: pointer;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
+    }
+
+    li {
+      background: #fff;
+      padding: 10px;
+      margin: 5px auto;
+      width: 350px;
+      border-radius: 5px;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    li.completed span {
+      text-decoration: line-through;
+      color: gray;
+    }
+
+    li span {
+      flex-grow: 1;
+      cursor: default;
+      user-select: none;
+    }
+
+    li input[type="checkbox"] {
+      margin-right: 10px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #ddd;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📝 Task Manager</h1>
+    <input type="text" id="taskInput" placeholder="Enter a new task" />
+    <button onclick="addTask()">Add Task</button>
+    <button onclick="clearAllTasks()">Clear All</button>
+    <ul id="taskList"></ul>
+  </div>
+
+  <script>
+    // Load tasks from localStorage on page load
+    window.onload = function () {
+      const savedTasks = JSON.parse(localStorage.getItem("tasks")) || [];
+      savedTasks.forEach(task => renderTask(task.text, task.completed));
+    };
+
+    function addTask() {
+      const input = document.getElementById("taskInput");
+      const taskText = input.value.trim();
+      if (taskText === "") return;
+
+      renderTask(taskText, false);
+      input.value = "";
+
+      saveTasksToLocalStorage();
+    }
+
+    function renderTask(text, completed) {
+      const taskList = document.getElementById("taskList");
+      const li = document.createElement("li");
+
+      li.className = completed ? "completed" : "";
+      li.innerHTML = `
+        <input type="checkbox" onchange="toggleCompleteCheckbox(this)" ${completed ? "checked" : ""} />
+        <span>${text}</span>
+        <button onclick="editTask(this)">✏️</button>
+        <button onclick="deleteTask(this)">❌</button>
+      `;
+
+      taskList.appendChild(li);
+    }
+
+    function toggleCompleteCheckbox(checkbox) {
+      const li = checkbox.parentElement;
+      if (checkbox.checked) {
+        li.classList.add("completed");
+      } else {
+        li.classList.remove("completed");
+      }
+      saveTasksToLocalStorage();
+    }
+
+    function deleteTask(btn) {
+      btn.parentElement.remove();
+      saveTasksToLocalStorage();
+    }
+
+    function editTask(btn) {
+      const li = btn.parentElement;
+      const span = li.querySelector("span");
+      const currentText = span.innerText;
+      const newText = prompt("Edit Task:", currentText);
+
+      if (newText !== null && newText.trim() !== "") {
+        span.innerText = newText.trim();
+        saveTasksToLocalStorage();
+      }
+    }
+
+    function clearAllTasks() {
+      if (confirm("Are you sure you want to clear all tasks?")) {
+        document.getElementById("taskList").innerHTML = "";
+        localStorage.removeItem("tasks");
+      }
+    }
+
+    function saveTasksToLocalStorage() {
+      const tasks = [];
+      document.querySelectorAll("#taskList li").forEach(li => {
+        const text = li.querySelector("span").innerText;
+        const completed = li.classList.contains("completed");
+        tasks.push({ text, completed });
+      });
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+    }
+  </script>
+</body>
+</html>
