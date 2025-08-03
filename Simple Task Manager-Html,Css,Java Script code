@@ -2,158 +2,266 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Simple Task Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Unique Task Manager</title>
   <style>
+    :root {
+      --bg: #f7f9fc;
+      --card: #ffffff;
+      --text: #333;
+      --accent: #007bff;
+      --complete: #28a745;
+      --delete: #dc3545;
+    }
+
+    body.dark-mode {
+      --bg: #121212;
+      --card: #1f1f1f;
+      --text: #f5f5f5;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f1f1f1;
-      text-align: center;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
       margin: 0;
-      padding: 0;
+      padding: 20px;
+      transition: all 0.3s ease;
     }
 
     .container {
-      margin-top: 50px;
+      max-width: 700px;
+      margin: auto;
+      background-color: var(--card);
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
-    input[type="text"] {
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .task-form input, .task-form button {
       padding: 10px;
-      width: 250px;
-      font-size: 16px;
+      margin: 5px;
+      font-size: 1em;
+      border-radius: 6px;
+      border: 1px solid #ccc;
     }
 
-    button {
-      padding: 10px 15px;
-      font-size: 16px;
-      margin-left: 5px;
+    .task-form button {
+      background-color: var(--accent);
+      color: white;
       cursor: pointer;
+      border: none;
+    }
+
+    .task-form button:hover {
+      background-color: #0056b3;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 10px;
+      font-weight: bold;
     }
 
     ul {
       list-style: none;
       padding: 0;
-      margin-top: 20px;
     }
 
     li {
-      background: #fff;
-      padding: 10px;
-      margin: 5px auto;
-      width: 350px;
-      border-radius: 5px;
-      text-align: left;
+      background-color: #e9f0ff;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 8px;
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
     }
 
-    li.completed span {
+    .dark-mode li {
+      background-color: #2c2c2c;
+    }
+
+    .task-text {
+      flex-grow: 1;
+      margin-right: 10px;
+    }
+
+    .completed .task-text {
       text-decoration: line-through;
       color: gray;
     }
 
-    li span {
-      flex-grow: 1;
-      cursor: default;
-      user-select: none;
-    }
-
-    li input[type="checkbox"] {
-      margin-right: 10px;
+    .btn {
+      border: none;
+      border-radius: 5px;
+      padding: 6px 10px;
+      color: white;
       cursor: pointer;
+      margin-left: 5px;
     }
 
-    button:hover {
-      background-color: #ddd;
+    .btn-complete { background-color: var(--complete); }
+    .btn-delete { background-color: var(--delete); }
+    .btn-toggle-dark {
+      float: right;
+      background-color: #444;
+    }
+
+    .btn-toggle-dark:hover {
+      background-color: #222;
+    }
+
+    @media screen and (max-width: 600px) {
+      .stats {
+        flex-direction: column;
+        align-items: center;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>📝 Task Manager</h1>
-    <input type="text" id="taskInput" placeholder="Enter a new task" />
-    <button onclick="addTask()">Add Task</button>
-    <button onclick="clearAllTasks()">Clear All</button>
+    <h1>✅ Unique Task Manager</h1>
+    <div class="task-form">
+      <input type="text" id="taskInput" placeholder="Task name" />
+      <input type="date" id="dueDate" />
+      <input type="time" id="reminderTime" />
+      <button onclick="addTask()">➕ Add</button>
+      <button class="btn btn-toggle-dark" onclick="toggleDarkMode()">🌙</button>
+    </div>
+
+    <div class="stats">
+      <span>Total: <span id="totalTasks">0</span></span>
+      <span>Completed: <span id="completedTasks">0</span></span>
+      <span>Pending: <span id="pendingTasks">0</span></span>
+    </div>
+
     <ul id="taskList"></ul>
   </div>
 
   <script>
-    // Load tasks from localStorage on page load
-    window.onload = function () {
-      const savedTasks = JSON.parse(localStorage.getItem("tasks")) || [];
-      savedTasks.forEach(task => renderTask(task.text, task.completed));
-    };
+    let tasks = [];
+
+    function updateStats() {
+      document.getElementById("totalTasks").innerText = tasks.length;
+      document.getElementById("completedTasks").innerText = tasks.filter(t => t.completed).length;
+      document.getElementById("pendingTasks").innerText = tasks.filter(t => !t.completed).length;
+    }
+
+    function saveTasks() {
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+    }
+
+    function loadTasks() {
+      const stored = localStorage.getItem("tasks");
+      if (stored) {
+        tasks = JSON.parse(stored);
+        tasks.forEach(renderTask);
+      }
+      updateStats();
+    }
+
+    function renderTask(task) {
+      const list = document.getElementById("taskList");
+      const li = document.createElement("li");
+      li.setAttribute("data-id", task.id);
+      if (task.completed) li.classList.add("completed");
+
+      const span = document.createElement("span");
+      span.className = "task-text";
+      span.innerText = `${task.text} (Due: ${task.dueDate || "N/A"})`;
+      li.appendChild(span);
+
+      const btnComplete = document.createElement("button");
+      btnComplete.className = "btn btn-complete";
+      btnComplete.innerText = "✔";
+      btnComplete.onclick = () => toggleComplete(task.id);
+      li.appendChild(btnComplete);
+
+      const btnDelete = document.createElement("button");
+      btnDelete.className = "btn btn-delete";
+      btnDelete.innerText = "🗑️";
+      btnDelete.onclick = () => deleteTask(task.id);
+      li.appendChild(btnDelete);
+
+      list.appendChild(li);
+    }
+
+    function refreshTasks() {
+      document.getElementById("taskList").innerHTML = "";
+      tasks.forEach(renderTask);
+      updateStats();
+    }
 
     function addTask() {
       const input = document.getElementById("taskInput");
-      const taskText = input.value.trim();
-      if (taskText === "") return;
+      const due = document.getElementById("dueDate").value;
+      const time = document.getElementById("reminderTime").value;
+      const text = input.value.trim();
 
-      renderTask(taskText, false);
+      if (!text) {
+        alert("Please enter a task name.");
+        return;
+      }
+
+      const id = Date.now();
+      const task = {
+        id,
+        text,
+        dueDate: due,
+        reminderTime: time,
+        completed: false
+      };
+
+      tasks.push(task);
+      saveTasks();
+      renderTask(task);
+      updateStats();
+
+      if (due && time) {
+        const reminder = new Date(`${due}T${time}`);
+        const now = new Date();
+        const delay = reminder - now;
+        if (delay > 0) {
+          setTimeout(() => {
+            alert(`🔔 Reminder: "${text}" is due now!`);
+          }, delay);
+        }
+      }
+
       input.value = "";
-
-      saveTasksToLocalStorage();
+      document.getElementById("dueDate").value = "";
+      document.getElementById("reminderTime").value = "";
     }
 
-    function renderTask(text, completed) {
-      const taskList = document.getElementById("taskList");
-      const li = document.createElement("li");
-
-      li.className = completed ? "completed" : "";
-      li.innerHTML = `
-        <input type="checkbox" onchange="toggleCompleteCheckbox(this)" ${completed ? "checked" : ""} />
-        <span>${text}</span>
-        <button onclick="editTask(this)">✏️</button>
-        <button onclick="deleteTask(this)">❌</button>
-      `;
-
-      taskList.appendChild(li);
-    }
-
-    function toggleCompleteCheckbox(checkbox) {
-      const li = checkbox.parentElement;
-      if (checkbox.checked) {
-        li.classList.add("completed");
-      } else {
-        li.classList.remove("completed");
-      }
-      saveTasksToLocalStorage();
-    }
-
-    function deleteTask(btn) {
-      btn.parentElement.remove();
-      saveTasksToLocalStorage();
-    }
-
-    function editTask(btn) {
-      const li = btn.parentElement;
-      const span = li.querySelector("span");
-      const currentText = span.innerText;
-      const newText = prompt("Edit Task:", currentText);
-
-      if (newText !== null && newText.trim() !== "") {
-        span.innerText = newText.trim();
-        saveTasksToLocalStorage();
+    function toggleComplete(id) {
+      const task = tasks.find(t => t.id === id);
+      if (task) {
+        task.completed = !task.completed;
+        saveTasks();
+        refreshTasks();
       }
     }
 
-    function clearAllTasks() {
-      if (confirm("Are you sure you want to clear all tasks?")) {
-        document.getElementById("taskList").innerHTML = "";
-        localStorage.removeItem("tasks");
-      }
+    function deleteTask(id) {
+      tasks = tasks.filter(t => t.id !== id);
+      saveTasks();
+      refreshTasks();
     }
 
-    function saveTasksToLocalStorage() {
-      const tasks = [];
-      document.querySelectorAll("#taskList li").forEach(li => {
-        const text = li.querySelector("span").innerText;
-        const completed = li.classList.contains("completed");
-        tasks.push({ text, completed });
-      });
-      localStorage.setItem("tasks", JSON.stringify(tasks));
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark-mode");
     }
+
+    window.onload = loadTasks;
   </script>
 </body>
 </html>
